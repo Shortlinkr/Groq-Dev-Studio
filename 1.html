@@ -11,6 +11,8 @@
         .code-font { font-family: 'Fira Code', monospace; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        .typing-indicator::after { content: '...'; animation: ellipsis 1.5s infinite; }
+        @keyframes ellipsis { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -20,131 +22,235 @@
                 <h1 class="text-2xl font-bold text-sky-400">AI Team Orchestrator</h1>
                 <p class="text-slate-400 text-sm">Serverless multi-agent coding environment</p>
             </div>
-            <div id="status-pill" class="px-3 py-1 rounded-full bg-slate-800 text-xs border border-slate-700">
+            <div id="status-pill" class="px-3 py-1 rounded-full bg-slate-800 text-xs border border-slate-700 transition-colors">
                 ⚪ Waiting for Keys
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Config & Keys -->
             <aside class="space-y-6">
+                <!-- Keys Section -->
                 <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                    <h2 class="text-lg font-semibold mb-4">🔑 API Keys</h2>
+                    <h2 class="text-lg font-semibold mb-4 flex justify-between">
+                        <span>🔑 API Keys</span>
+                        <span id="key-status-icon" class="text-slate-500">❌</span>
+                    </h2>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Groq Key (Free Tier)</label>
-                            <input type="password" id="groq-key" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm focus:border-sky-500 outline-none" placeholder="gsk_...">
-                            <a href="https://console.groq.com/keys" target="_blank" class="text-[10px] text-sky-500 hover:underline">Get from Groq Console</a>
+                            <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Groq Key</label>
+                            <input type="password" id="groq-key" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm focus:border-sky-500 outline-none">
                         </div>
                         <div>
-                            <label class="block text-xs uppercase text-slate-500 font-bold mb-1">OpenRouter Key (Free Models)</label>
-                            <input type="password" id="openrouter-key" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm focus:border-sky-500 outline-none" placeholder="sk-or-...">
-                            <a href="https://openrouter.ai/keys" target="_blank" class="text-[10px] text-sky-500 hover:underline">Get from OpenRouter</a>
+                            <label class="block text-xs uppercase text-slate-500 font-bold mb-1">OpenRouter Key</label>
+                            <input type="password" id="openrouter-key" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm focus:border-sky-500 outline-none">
                         </div>
-                        <button id="save-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded transition shadow-lg shadow-sky-900/20">
+                        <button id="save-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded transition">
                             Save to Browser
                         </button>
                     </div>
                 </div>
 
+                <!-- Project Request Section -->
                 <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                    <h2 class="text-lg font-semibold mb-4">🏠 Project Metadata</h2>
-                    <input type="text" id="project-name" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm mb-4" placeholder="Project Name (e.g. My Website)">
-                    <textarea id="project-desc" rows="4" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm" placeholder="Describe your wild idea in detail..."></textarea>
-                    <button id="start-team" class="w-full mt-4 border border-sky-500 text-sky-400 hover:bg-sky-500/10 font-bold py-2 rounded transition">
-                        Summon the Team
+                    <h2 class="text-lg font-semibold mb-4">🏠 Project Details</h2>
+                    <textarea id="project-desc" rows="5" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm focus:border-sky-500 outline-none" placeholder="E.g., Build a modern, single-page calculator app with dark mode and a neon aesthetic using TailwindCSS..."></textarea>
+                    <button id="start-team" class="w-full mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded transition shadow-lg shadow-sky-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                        🚀 Summon the Team
                     </button>
                 </div>
             </aside>
 
-            <!-- Middle/Right Column: Team Log and Code Output -->
-            <main class="lg:col-span-2 space-y-6">
-                <!-- Team Activity -->
-                <div class="bg-slate-900 rounded-xl border border-slate-800 flex flex-col h-[400px]">
-                    <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-                        <h2 class="text-lg font-semibold">🗨️ Team Debate</h2>
-                        <span class="text-xs text-slate-500">Activity Log</span>
+            <main class="lg:col-span-2 space-y-6 flex flex-col">
+                <!-- Team Log -->
+                <div class="bg-slate-900 rounded-xl border border-slate-800 flex flex-col h-[350px]">
+                    <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50 rounded-t-xl">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300">🗨️ Live Execution Log</h2>
                     </div>
-                    <div id="activity-log" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
-                        <div class="text-slate-500 italic">Configure keys and describe your project to begin...</div>
+                    <div id="activity-log" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm font-mono">
+                        <div class="text-slate-500">System initialized. Awaiting project specs...</div>
                     </div>
                 </div>
 
-                <!-- Code Display -->
-                <div class="bg-black rounded-xl border border-slate-800 overflow-hidden">
+                <!-- Code Output -->
+                <div class="bg-black rounded-xl border border-slate-800 flex-1 flex flex-col overflow-hidden min-h-[400px]">
                     <div class="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
-                        <span class="text-xs font-bold uppercase text-slate-400">Final Code Preview</span>
-                        <button id="copy-code" class="text-xs text-sky-500 hover:text-sky-400">Copy to Clipboard</button>
+                        <span class="text-xs font-bold uppercase text-slate-400">Final Output (index.html)</span>
+                        <button id="copy-code" class="text-xs px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 transition">Copy Code</button>
                     </div>
-                    <pre id="code-output" class="p-6 text-sm code-font overflow-x-auto min-h-[300px] text-green-400"><code>// No code generated yet.</code></pre>
+                    <pre id="code-output" class="p-6 text-sm code-font overflow-auto flex-1 text-sky-300/80 m-0"><code>// Code generated by the AI team will appear here...</code></pre>
                 </div>
             </main>
         </div>
     </div>
 
     <script>
+        // UI Elements
+        const btnSave = document.getElementById('save-btn');
+        const btnStart = document.getElementById('start-team');
         const statusPill = document.getElementById('status-pill');
         const activityLog = document.getElementById('activity-log');
         const codeOutput = document.getElementById('code-output');
+        const keyStatusIcon = document.getElementById('key-status-icon');
 
-        // Initial Load
-        window.addEventListener('DOMContentLoaded', () => {
+        // State
+        let keys = { groq: '', openrouter: '' };
+        let isWorking = false;
+
+        // Initialization
+        window.onload = () => {
             const saved = localStorage.getItem('ai_dev_vault');
             if (saved) {
-                const keys = JSON.parse(saved);
-                document.getElementById('groq-key').value = keys.groq || '';
-                document.getElementById('openrouter-key').value = keys.openrouter || '';
-                updateStatus(true);
+                keys = JSON.parse(saved);
+                document.getElementById('groq-key').value = keys.groq;
+                document.getElementById('openrouter-key').value = keys.openrouter;
+                checkKeys();
+            }
+        };
+
+        // Save Keys
+        btnSave.addEventListener('click', () => {
+            keys.groq = document.getElementById('groq-key').value.trim();
+            keys.openrouter = document.getElementById('openrouter-key').value.trim();
+            localStorage.setItem('ai_dev_vault', JSON.stringify(keys));
+            checkKeys();
+            addLog('SYSTEM', 'API keys saved securely to local storage.', 'text-green-400');
+        });
+
+        function checkKeys() {
+            const ready = keys.groq && keys.openrouter;
+            statusPill.innerHTML = ready ? '🟢 Team Ready' : '⚪ Missing Keys';
+            statusPill.className = `px-3 py-1 rounded-full text-xs border transition-colors ${ready ? 'bg-green-900/30 border-green-700 text-green-400' : 'bg-red-900/30 border-red-700 text-red-400'}`;
+            keyStatusIcon.innerText = ready ? '✅' : '❌';
+        }
+
+        function addLog(role, message, colorClass, isThinking = false) {
+            const div = document.createElement('div');
+            div.className = `p-3 rounded bg-slate-950 border-l-2 border-slate-700 ${colorClass} text-xs`;
+            
+            let id = `log-${Date.now()}`;
+            div.id = id;
+            div.innerHTML = `<span class="font-bold text-slate-500 mb-1 block">${role}</span><span class="message-content ${isThinking ? 'typing-indicator' : ''}">${message}</span>`;
+            
+            activityLog.appendChild(div);
+            activityLog.scrollTop = activityLog.scrollHeight;
+            return id;
+        }
+
+        function updateLog(id, newMessage, removeThinking = true) {
+            const el = document.getElementById(id);
+            if(el) {
+                const msgSpan = el.querySelector('.message-content');
+                msgSpan.innerText = newMessage;
+                if(removeThinking) msgSpan.classList.remove('typing-indicator');
+            }
+        }
+
+        // Orchestration Logic
+        btnStart.addEventListener('click', async () => {
+            const desc = document.getElementById('project-desc').value.trim();
+            if (!desc) return alert("Please describe your project first!");
+            if (!keys.groq || !keys.openrouter) return alert("Please save your API keys first!");
+            if (isWorking) return;
+
+            isWorking = true;
+            btnStart.disabled = true;
+            btnStart.innerText = "⏳ Team is working...";
+            codeOutput.innerText = "// Generating...";
+            activityLog.innerHTML = ""; // clear logs
+
+            addLog('SYSTEM', `Initializing project protocol for: "${desc.substring(0, 30)}..."`, 'text-slate-400');
+
+            try {
+                // ==========================================
+                // STAGE 1: THE ARCHITECT (Groq API / Llama)
+                // ==========================================
+                let archLogId = addLog('ARCHITECT (Groq Llama 3)', 'Analyzing requirements and drafting technical spec', 'text-purple-400', true);
+                
+                const archResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${keys.groq}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama3-70b-8192',
+                        messages: [{
+                            role: 'system', 
+                            content: 'You are an elite software architect. Break down the user\'s app idea into a detailed, step-by-step technical implementation plan. Focus on how it should be built using HTML, JS, and TailwindCSS in a single file.'
+                        }, {
+                            role: 'user', 
+                            content: desc
+                        }],
+                        temperature: 0.3
+                    })
+                });
+
+                if(!archResponse.ok) throw new Error(`Groq API Error: ${archResponse.status}`);
+                const archData = await archResponse.json();
+                const architecturePlan = archData.choices[0].message.content;
+                
+                updateLog(archLogId, 'Technical specification completed.', true);
+                addLog('ARCHITECT -> LEAD CODER', 'Handing off specifications...', 'text-slate-500');
+
+                // ==========================================
+                // STAGE 2: THE LEAD CODER (OpenRouter / DeepSeek)
+                // ==========================================
+                let coderLogId = addLog('LEAD CODER (OpenRouter DeepSeek)', 'Writing HTML/JS/CSS code based on spec', 'text-sky-400', true);
+
+                const coderResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${keys.openrouter}`, 
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': window.location.href, // Recommended by OpenRouter
+                        'X-Title': 'AI Dev Orchestrator' 
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek/deepseek-r1:free', // Using the free tier model
+                        messages: [{
+                            role: 'system', 
+                            content: `You are an expert frontend developer. Write the complete code for the requested app based on the Architect's plan. 
+                            RULES: 
+                            1. Output MUST be exactly ONE valid HTML file containing all CSS (Tailwind allowed) and JavaScript.
+                            2. Do not use markdown wrappers like \`\`\`html. Just return the raw code starting with <!DOCTYPE html>.
+                            3. Ensure the UI is beautiful and fully functional.`
+                        }, {
+                            role: 'user', 
+                            content: `Here is the Architect's plan:\n\n${architecturePlan}\n\nBuild the complete single-file application.`
+                        }],
+                        temperature: 0.2
+                    })
+                });
+
+                if(!coderResponse.ok) throw new Error(`OpenRouter API Error: ${coderResponse.status}`);
+                const coderData = await coderResponse.json();
+                let finalCode = coderData.choices[0].message.content;
+
+                // Clean up potential markdown wrappers from the AI
+                finalCode = finalCode.replace(/^```html/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+
+                updateLog(coderLogId, 'Code generation successful.', true);
+                
+                // Display the code
+                codeOutput.innerText = finalCode;
+                addLog('SYSTEM', 'Execution finished. Code is ready in the output window.', 'text-green-400');
+
+            } catch (error) {
+                addLog('ERROR', error.message, 'text-red-500');
+                codeOutput.innerText = `// Error occurred during generation.\n// ${error.message}`;
+            } finally {
+                isWorking = false;
+                btnStart.disabled = false;
+                btnStart.innerText = "🚀 Summon the Team Again";
             }
         });
 
-        // Save Keys
-        document.getElementById('save-btn').addEventListener('click', () => {
-            const keys = {
-                groq: document.getElementById('groq-key').value,
-                openrouter: document.getElementById('openrouter-key').value
-            };
-            localStorage.setItem('ai_dev_vault', JSON.stringify(keys));
-            updateStatus(true);
-            addLog('System', 'API keys saved securely to local storage.', 'text-sky-400');
-        });
-
-        function updateStatus(ready) {
-            statusPill.innerHTML = ready ? '🟢 Team Ready' : '⚪ Waiting for Keys';
-            statusPill.className = `px-3 py-1 rounded-full text-xs border ${ready ? 'bg-green-900/20 border-green-700 text-green-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`;
-        }
-
-        function addLog(role, message, colorClass) {
-            const div = document.createElement('div');
-            div.className = `p-3 rounded bg-slate-950 border-l-4 border-slate-800 ${colorClass}`;
-            div.innerHTML = `<span class="font-bold uppercase text-[10px] block opacity-70">${role}</span>${message}`;
-            activityLog.appendChild(div);
-            activityLog.scrollTop = activityLog.scrollHeight;
-        }
-
-        // Dummy Trigger for next steps
-        document.getElementById('start-team').addEventListener('click', () => {
-            const desc = document.getElementById('project-desc').value;
-            if (!desc) return alert("Please describe your project first!");
-            
-            addLog('System', 'Initializing team protocols...', 'text-white');
-            addLog('Architect (Llama 4)', `Analyzing request: "${desc}"`, 'text-sky-400');
-            
-            // This is where we will hook up the fetch requests in the next stage
-            setTimeout(() => {
-                addLog('Lead Coder (DeepSeek)', 'Architecting the file structure and logic...', 'text-orange-400');
-            }, 1000);
-        });
-
+        // Copy Code utility
         document.getElementById('copy-code').addEventListener('click', () => {
             const code = codeOutput.innerText;
-            const textarea = document.createElement('textarea');
-            textarea.value = code;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert("Code copied!");
+            if (code && !code.startsWith('// No code')) {
+                navigator.clipboard.writeText(code);
+                const btn = document.getElementById('copy-code');
+                btn.innerText = 'Copied!';
+                setTimeout(() => btn.innerText = 'Copy Code', 2000);
+            }
         });
     </script>
 </body>
