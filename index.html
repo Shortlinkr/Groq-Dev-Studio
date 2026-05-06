@@ -3,51 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Dev Team | Control Center</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>AI Team | Serverless Dev Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Inter:wght@400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f1f5f9; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        .typing-indicator::after { content: '...'; animation: ellipsis 1.5s infinite; }
+        @keyframes ellipsis { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
+        .debug-panel { font-size: 10px; color: #64748b; border-top: 1px solid #1e293b; margin-top: 10px; padding-top: 10px; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🤖 AI Dev Team Orchestrator</h1>
-            <p>Your serverless AI coding squad.</p>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-sky-400">AI Team Orchestrator</h1>
+                <p class="text-slate-400 text-sm">One Key. Multi-Agent. Secure Local Execution.</p>
+            </div>
+            <div id="status-pill" class="px-3 py-1 rounded-full bg-slate-800 text-xs border border-slate-700 transition-colors">
+                ⚪ Awaiting Key
+            </div>
         </header>
 
-        <section id="setup">
-            <h2>1. Setup API Keys</h2>
-            <p class="hint">Keys are stored locally in your browser. They are never sent to a server.</p>
-            
-            <div class="key-group">
-                <label>Google Gemini Key:</label>
-                <input type="password" id="gemini-key" placeholder="Starts with AIza...">
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="guide-link">Get Key</a>
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <aside class="space-y-6">
+                <!-- API Key Section -->
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h2 class="text-lg font-semibold mb-4 flex justify-between">
+                        <span>🔑 OpenRouter Vault</span>
+                        <span id="key-status-icon" class="text-slate-500">❌</span>
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Your API Key</label>
+                            <input type="password" id="openrouter-key" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm focus:border-sky-500 outline-none" placeholder="sk-or-...">
+                        </div>
+                        <button id="save-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded transition">
+                            Save to Browser Storage
+                        </button>
+                        <p class="text-[10px] text-slate-500 italic">Keys never leave your browser except to talk to OpenRouter.</p>
+                    </div>
+                </div>
 
-            <div class="key-group">
-                <label>Anthropic Claude Key:</label>
-                <input type="password" id="claude-key" placeholder="Starts with sk-ant...">
-                <a href="https://console.anthropic.com/settings/keys" target="_blank" class="guide-link">Get Key</a>
-            </div>
+                <!-- Project Request -->
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                    <h2 class="text-lg font-semibold mb-4 text-sky-400">🚀 Create App</h2>
+                    <textarea id="project-desc" rows="5" class="w-full bg-slate-950 border border-slate-700 rounded p-3 text-sm focus:border-sky-500 outline-none" placeholder="Describe a clean, safe app idea..."></textarea>
+                    
+                    <div class="mt-4 p-3 bg-slate-950/50 rounded border border-slate-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-slate-400">Network Mode</span>
+                            <select id="request-mode" class="bg-slate-800 text-[10px] rounded border border-slate-700 p-1">
+                                <option value="standard">Standard (Recommended)</option>
+                                <option value="minimal">Minimal Headers (Bypass)</option>
+                            </select>
+                        </div>
+                    </div>
 
-            <div class="key-group">
-                <label>OpenAI (GPT) Key:</label>
-                <input type="password" id="openai-key" placeholder="Starts with sk-proj...">
-                <a href="https://platform.openai.com/api-keys" target="_blank" class="guide-link">Get Key</a>
-            </div>
+                    <button id="start-team" class="w-full mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded transition shadow-lg shadow-sky-900/20 disabled:opacity-50">
+                        Summon the Team
+                    </button>
+                    
+                    <div class="debug-panel">
+                        <strong>Last Status:</strong> <span id="debug-status">Idle</span><br>
+                        <strong>Last Error:</strong> <span id="debug-error">None</span>
+                    </div>
+                </div>
+            </aside>
 
-            <button id="save-keys-btn">Save Keys to Browser</button>
-        </section>
+            <!-- Main Log and Output -->
+            <main class="lg:col-span-2 space-y-6">
+                <div class="bg-slate-900 rounded-xl border border-slate-800 flex flex-col h-[300px]">
+                    <div class="p-4 border-b border-slate-800 bg-slate-800/30 rounded-t-xl flex justify-between">
+                        <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Execution Log</h2>
+                        <span id="loader" class="hidden text-sky-500 text-xs animate-pulse font-bold">WORKING</span>
+                    </div>
+                    <div id="activity-log" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm font-mono">
+                        <div class="text-slate-500 italic">Ready for project input.</div>
+                    </div>
+                </div>
 
-        <hr>
-
-        <section id="output-section">
-            <h2>2. Final Project Code</h2>
-            <div id="status-bar">Status: <span id="status-text">Waiting for keys...</span></div>
-            <pre id="code-display"><code>// Code generated by the AI team will appear here...</code></pre>
-            <button id="copy-btn">Copy Code</button>
-        </section>
+                <div class="bg-black rounded-xl border border-slate-800 flex flex-col min-h-[450px]">
+                    <div class="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-400">OUTPUT_PREVIEW</span>
+                        <button id="copy-code" class="text-xs px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 transition">Copy Code</button>
+                    </div>
+                    <pre id="code-output" class="p-6 text-sm code-font overflow-auto flex-1 text-sky-300/90 leading-relaxed m-0"><code>// Generated code will appear here...</code></pre>
+                </div>
+            </main>
+        </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        const activityLog = document.getElementById('activity-log');
+        const codeOutput = document.getElementById('code-output');
+        const btnStart = document.getElementById('start-team');
+        const loader = document.getElementById('loader');
+        const debugStatus = document.getElementById('debug-status');
+        const debugError = document.getElementById('debug-error');
+        
+        let apiKey = '';
+
+        window.onload = () => {
+            const saved = localStorage.getItem('or_vault');
+            if (saved) {
+                apiKey = saved;
+                document.getElementById('openrouter-key').value = saved;
+                updateKeyUI(true);
+            }
+        };
+
+        document.getElementById('save-btn').addEventListener('click', () => {
+            apiKey = document.getElementById('openrouter-key').value.trim();
+            localStorage.setItem('or_vault', apiKey);
+            updateKeyUI(!!apiKey);
+            addLog('SYSTEM', 'Local Vault updated.', 'text-green-400');
+        });
+
+        function updateKeyUI(ready) {
+            document.getElementById('status-pill').innerHTML = ready ? '🟢 Ready' : '⚪ Missing Key';
+            document.getElementById('key-status-icon').innerText = ready ? '✅' : '❌';
+        }
+
+        function addLog(role, message, colorClass, isThinking = false) {
+            const div = document.createElement('div');
+            div.className = `p-3 rounded bg-slate-950/50 border-l-2 border-slate-700 ${colorClass} text-xs`;
+            div.innerHTML = `<span class="font-bold text-slate-500 mb-1 block uppercase text-[10px]">${role}</span><span class="${isThinking ? 'typing-indicator' : ''}">${message}</span>`;
+            activityLog.appendChild(div);
+            activityLog.scrollTop = activityLog.scrollHeight;
+            return div;
+        }
+
+        async function callAI(model, system, user) {
+            const mode = document.getElementById('request-mode').value;
+            
+            // Construct headers based on mode
+            const headers = {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            };
+            
+            // Only add extra headers in standard mode (sometimes causes CORS issues)
+            if (mode === 'standard') {
+                headers['HTTP-Referer'] = window.location.href;
+                headers['X-Title'] = 'AI Dev Orchestrator';
+            }
+
+            debugStatus.innerText = `Connecting to ${model}...`;
+            
+            try {
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: system },
+                            { role: 'user', content: user }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error?.message || `HTTP ${response.status}`);
+                }
+                
+                return data.choices[0].message.content;
+            } catch (err) {
+                debugError.innerText = err.message;
+                throw err;
+            }
+        }
+
+        btnStart.addEventListener('click', async () => {
+            const desc = document.getElementById('project-desc').value.trim();
+            if (!desc || !apiKey) return alert("Please check your prompt and API key.");
+
+            btnStart.disabled = true;
+            loader.classList.remove('hidden');
+            activityLog.innerHTML = "";
+            codeOutput.innerText = "// Connecting to AI team...";
+            debugError.innerText = "None";
+
+            try {
+                // ARCHITECT
+                addLog('ARCHITECT', 'Analyzing requirements...', 'text-purple-400', true);
+                const plan = await callAI(
+                    'google/gemini-2.0-flash-exp:free', // Using Gemini Free as primary architect
+                    'You are an expert systems architect. Design a technical plan for a single-file HTML/Tailwind/JS app. Focus on safety and clean code.',
+                    desc
+                );
+                addLog('SYSTEM', 'Blueprint finalized.', 'text-slate-500');
+
+                // CODER
+                addLog('LEAD CODER', 'Building application...', 'text-sky-400', true);
+                const code = await callAI(
+                    'deepseek/deepseek-chat', // Deepseek Chat is very reliable if V3/R1 free is busy
+                    'You are a senior coder. Output ONLY raw HTML code for the requested app. No explanations, no markdown blocks.',
+                    `Build this specific plan: ${plan}`
+                );
+
+                const cleanCode = code.replace(/```html|```/gi, '').trim();
+                codeOutput.innerText = cleanCode;
+                addLog('SYSTEM', 'Success! Project generated.', 'text-green-400');
+                debugStatus.innerText = "Execution Finished Successfully";
+
+            } catch (e) {
+                addLog('ERROR', `Connection failed. See Debug Panel.`, 'text-red-500');
+                debugStatus.innerText = "Failed";
+            } finally {
+                btnStart.disabled = false;
+                loader.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('copy-code').addEventListener('click', () => {
+            const text = codeOutput.innerText;
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            alert("Code copied!");
+        });
+    </script>
 </body>
 </html>
