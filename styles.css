@@ -1,0 +1,62 @@
+:root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f8fafc;
+    --accent: #38bdf8;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.key-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+input {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: white;
+}
+
+button {
+    background-color: var(--accent);
+    color: #000;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#code-display {
+    background: #000;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    overflow-x: auto;
+    font-family: 'Fira Code', monospace;
+    min-height: 200px;
+}
+
+.guide-link {
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-decoration: none;
+}
